@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Animal Cell Explorer - Cyberpunk Edition</title>
+    
+    <!-- OpenDyslexic as default font -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/open-dyslexic.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'OpenDyslexic', 'Open-Dyslexic', sans-serif;
+            background: linear-gradient(135deg, #1a0033 0%, #2d1b69 25%, #0f3460 75%, #16213e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            position: relative;
+            letter-spacing: 0.1em;
+            line-height: 1.8;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .ui-panel {
+            position: absolute;
+            background: rgba(10, 10, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+        }
+        
+        .title-panel {
+            top: 20px;
+            left: 20px;
+            animation: slideInLeft 0.6s ease-out;
+        }
+        
+        .title {
+            font-family: 'Orbitron', 'OpenDyslexic', monospace;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #00ffff;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .controls-panel {
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            animation: slideInRight 0.6s ease-out;
+        }
+        
+        .legend-panel {
+            bottom: 20px;
+            left: 20px;
+            animation: slideInLeft 0.6s ease-out;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .info-panel {
+            bottom: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .info-panel.active {
+            transform: translateX(0);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00ffff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+            border: 2px solid #00ffff;
+            color: #ffffff;
+            font-family: 'OpenDyslexic', sans-serif;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(255, 0, 255, 0.3));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button.active {
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            color: #000;
+            font-weight: 700;
+        }
+        
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        
+        .legend-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .organelle-name {
+            font-size: 1.2rem;
+            color: #00ffff;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .organelle-description {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .fun-fact {
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.1), rgba(0, 255, 255, 0.1));
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 3px solid #ff00ff;
+            margin-top: 10px;
+        }
+        
+        .fun-fact-title {
+            color: #ff00ff;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        
+        .instructions {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            max-width: 480px;
+            opacity: 0.7;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00ffff, #ff00ff);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <canvas id="cut-canvas" style="display: none; position: fixed; top: 0; left: 0; z-index: 50;"></canvas>
+    
+    <div class="title-panel ui-panel">
+        <h1 class="title">Cell Explorer 3D</h1>
+        <div class="subtitle">Interactive Animal Cell Model • Grade 8 Science</div>
+    </div>
+    
+    <div class="controls-panel ui-panel">
+        <div class="control-group">
+            <div class="control-label">View Controls</div>
+            <div class="button-group">
+                <button id="explodeBtn">Explode View</button>
+                <button id="cutBtn">Cut View</button>
+            </div>
+            <button id="rotateBtn" style="margin-top: 10px;">Auto-Rotate</button>
+            <button id="resetBtn" style="margin-top: 10px;">Reset View</button>
+        </div>
+    </div>
+    </div>
+    
+    <div class="legend-panel ui-panel">
+        <div class="control-label">Cell Components</div>
+        <div id="legendContainer"></div>
+    </div>
+    
+    <div class="info-panel ui-panel" id="infoPanel">
+        <div id="infoContent"></div>
+    </div>
+    
+    <div class="instructions">
+        <p>🖱️ Drag to rotate • Scroll to zoom • Click organelles to learn</p>
+    </div>
+    
+    <script type="module">
+        import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js";
+        window.THREE = THREE;
+
+        // Wait for DOM to be fully loaded
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('Starting 3D Cell Explorer...');
+            
+            // Ontario Grade 8 Curriculum-aligned organelle data with EXACT legend colors
+            const organelleData = {
+            nucleus: {
+                name: "Nucleus",
+                color: 0x4A90E2, // Blue as in legend
+                description: "The control center of the cell. Think of it as the CEO's office where all the important decisions are made. It contains DNA, the instruction manual for everything the cell does.",
+                funFact: "If you stretched out all the DNA in just one cell, it would be about 2 meters long! That is taller than most eighth graders!",
+                curriculum: "Controls all cell activities and contains genetic material (DNA)"
+            },
+            nucleolus: {
+                name: "Nucleolus",
+                color: 0x2C5F8D, // Darker blue
+                description: "The dark spot inside the nucleus. This is where ribosomes are made - it's like a factory within a factory!",
+                funFact: "The nucleolus can take up 25% of the nucleus volume and disappears during cell division!",
+                curriculum: "Produces ribosomes within the nucleus"
+            },
+            mitochondria: {
+                name: "Mitochondria",
+                color: 0xFF6B6B, // Red as in legend
+                description: "The powerhouses of the cell! These bean-shaped organelles are like tiny power plants that convert food into energy (ATP) that the cell can use.",
+                funFact: "You inherit all your mitochondria from your mother! They have their own DNA separate from the nucleus.",
+                curriculum: "Produces energy (ATP) through cellular respiration"
+            },
+            roughER: {
+                name: "Rough Endoplasmic Reticulum",
+                color: 0x4ECDC4, // Cyan as in legend
+                description: "The highway system with factories! The rough ER has ribosomes attached that make proteins. It's like an assembly line.",
+                funFact: "The rough ER got its name because it looks bumpy under a microscope due to all the ribosomes attached to it!",
+                curriculum: "Synthesizes proteins with attached ribosomes"
+            },
+            smoothER: {
+                name: "Smooth Endoplasmic Reticulum",
+                color: 0x7DD3C0, // Light cyan
+                description: "The smooth highway system! Without ribosomes, it specializes in making lipids and detoxifying harmful substances.",
+                funFact: "Liver cells have lots of smooth ER because they help detoxify poisons and drugs!",
+                curriculum: "Produces lipids and detoxifies substances"
+            },
+            golgiApparatus: {
+                name: "Golgi Apparatus",
+                color: 0xFFD93D, // Yellow as in legend
+                description: "The cell's post office! It receives proteins from the ER, modifies them, packages them, and ships them to where they need to go.",
+                funFact: "It looks like a stack of pancakes! Scientists call each 'pancake' a cisterna.",
+                curriculum: "Packages and modifies proteins for transport"
+            },
+            ribosomes: {
+                name: "Ribosomes",
+                color: 0x95E1D3, // Light green as in legend
+                description: "Tiny protein factories! These are where amino acids are assembled into proteins following instructions from the DNA.",
+                funFact: "A single cell can contain millions of ribosomes! They are so important that cells without them cannot survive.",
+                curriculum: "Sites of protein synthesis"
+            },
+            lysosomes: {
+                name: "Lysosomes",
+                color: 0xF38181, // Pink as in legend
+                description: "The cleanup crew! These contain digestive enzymes that break down waste, worn-out cell parts, and invading bacteria.",
+                funFact: "Lysosomes are like the cell's recycling center. They can even digest the entire cell in a process called autophagy!",
+                curriculum: "Contains enzymes that break down waste materials"
+            },
+            peroxisomes: {
+                name: "Peroxisomes",
+                color: 0xAA96DA, // Purple as in legend
+                description: "The detox centers! They break down fatty acids and neutralize dangerous substances like hydrogen peroxide.",
+                funFact: "Peroxisomes got their name because they produce and then destroy hydrogen peroxide (H2O2), keeping cells safe!",
+                curriculum: "Break down toxic substances and fatty acids"
+            },
+            centrioles: {
+                name: "Centrioles",
+                color: 0xFFA500, // Orange
+                description: "The construction managers during cell division! These cylinder-shaped structures help organize the cell when it's time to divide.",
+                funFact: "Centrioles are arranged at right angles to each other and are made of nine groups of three microtubules!",
+                curriculum: "Organize cell division"
+            },
+            vacuoles: {
+                name: "Vacuoles",
+                color: 0x87CEEB, // Sky blue
+                description: "Storage bubbles! Animal cells have small vacuoles that store water, nutrients, and waste products.",
+                funFact: "Plant cells have one huge vacuole, but animal cells have many small ones!",
+                curriculum: "Store materials and waste products"
+            },
+            cytoplasm: {
+                name: "Cytoplasm",
+                color: 0x40E0D0, // Turquoise
+                description: "The jelly-like fluid that fills the cell! It's mostly water but contains all the organelles and helps them move around.",
+                funFact: "Cytoplasm is constantly moving in a process called cytoplasmic streaming!",
+                curriculum: "Gel-like substance that holds organelles in place"
+            },
+            cellMembrane: {
+                name: "Cell Membrane",
+                color: 0x8FCACA, // Light cyan-green as in legend
+                description: "The security guard of the cell! It controls what enters and exits the cell, keeping the good stuff in and the bad stuff out.",
+                funFact: "The cell membrane is so thin that you would need to stack 10,000 of them to equal the thickness of a piece of paper!",
+                curriculum: "Selectively permeable barrier that controls movement of materials"
+            },
+            microvilli: {
+                name: "Microvilli",
+                color: 0x98D8C8, // Mint green
+                description: "Tiny finger-like projections that increase surface area for absorption. Like having more doors for nutrients to enter!",
+                funFact: "Intestinal cells can have up to 1000 microvilli each!",
+                curriculum: "Increase surface area for absorption"
+            },
+            cytoskeleton: {
+                name: "Cytoskeleton",
+                color: 0xC0C0C0, // Silver/gray
+                description: "The cell's scaffolding! A network of protein fibers that gives the cell its shape and helps move things around.",
+                funFact: "The cytoskeleton can completely reorganize itself in minutes!",
+                curriculum: "Provides structure and support to the cell"
+            }
+        };
+        
+        // Scene setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.localClippingEnabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        
+        // Lighting setup for realistic appearance
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+        scene.add(ambientLight);
+        
+        const mainLight = new THREE.DirectionalLight(0x00ffff, 0.8);
+        mainLight.position.set(5, 5, 5);
+        mainLight.castShadow = true;
+        scene.add(mainLight);
+        
+        const accentLight = new THREE.DirectionalLight(0xff00ff, 0.4);
+        accentLight.position.set(-5, -5, -5);
+        scene.add(accentLight);
+        
+        const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        rimLight.position.set(0, 10, 0);
+        scene.add(rimLight);
+        
+        // Clipping plane for cut view
+        const clippingPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+        
+        // Cell group
+        const cellGroup = new THREE.Group();
+        scene.add(cellGroup);
+        
+        // Organelle meshes storage
+        const organelles = {};
+        const clickableObjects = [];
+        let selectedOrganelle = null;
+        let cutViewActive = false;
+        
+        // Create cell membrane (irregular sphere) - make it not block clicks
+        const membraneGeometry = new THREE.SphereGeometry(3.5, 64, 64);
+        // Deform membrane to make it more realistic
+        const membraneVertices = membraneGeometry.attributes.position;
+        for (let i = 0; i < membraneVertices.count; i++) {
+            const x = membraneVertices.getX(i);
+            const y = membraneVertices.getY(i);
+            const z = membraneVertices.getZ(i);
+            const noise = (Math.sin(x * 2) * Math.cos(y * 2) * Math.sin(z * 2)) * 0.1;
+            membraneVertices.setXYZ(i, 
+                x * (1 + noise), 
+                y * (1 + noise), 
+                z * (1 + noise)
+            );
+        }
+        membraneGeometry.computeVertexNormals();
+        
+        const membraneMaterial = new THREE.MeshPhysicalMaterial({
+            color: organelleData.cellMembrane.color,
+            transparent: true,
+            opacity: 0.15,
+            metalness: 0.1,
+            roughness: 0.8,
+            clearcoat: 1,
+            clearcoatRoughness: 0.3,
+            side: THREE.DoubleSide,
+            depthWrite: false, // This helps with transparency sorting
+            clippingPlanes: []
+        });
+        const membrane = new THREE.Mesh(membraneGeometry, membraneMaterial);
+        membrane.userData = { type: 'cellMembrane', originalPosition: [0, 0, 0] };
+        membrane.renderOrder = 999; // Render last
+        cellGroup.add(membrane);
+        organelles.cellMembrane = membrane;
+        
+        // Create cytoplasm (fills the cell)
+        const cytoplasmGeometry = new THREE.SphereGeometry(3.3, 32, 32);
+        const cytoplasmMaterial = new THREE.MeshPhysicalMaterial({
+            color: organelleData.cytoplasm.color,
+            transparent: true,
+            opacity: 0.05,
+            metalness: 0,
+            roughness: 1,
+            clippingPlanes: []
+        });
+        const cytoplasm = new THREE.Mesh(cytoplasmGeometry, cytoplasmMaterial);
+        cytoplasm.userData = { type: 'cytoplasm', originalPosition: [0, 0, 0] };
+        cytoplasm.renderOrder = 0;
+        cellGroup.add(cytoplasm);
+        clickableObjects.push(cytoplasm);
+        
+        // Create nucleus (large, textured sphere)
+        const nucleusGroup = new THREE.Group();
+        const nucleusGeometry = new THREE.SphereGeometry(1.0, 32, 32);
+        // Add texture to nucleus
+        const nucleusVertices = nucleusGeometry.attributes.position;
+        for (let i = 0; i < nucleusVertices.count; i++) {
+            const x = nucleusVertices.getX(i);
+            const y = nucleusVertices.getY(i);
+            const z = nucleusVertices.getZ(i);
+            const noise = Math.sin(x * 10) * Math.cos(y * 10) * 0.02;
+            nucleusVertices.setXYZ(i, x * (1 + noise), y * (1 + noise), z * (1 + noise));
+        }
+        
+        const nucleusMaterial = new THREE.MeshPhysicalMaterial({
+            color: organelleData.nucleus.color,
+            metalness: 0.2,
+            roughness: 0.6,
+            clearcoat: 0.3,
+            clippingPlanes: []
+        });
+        const nucleus = new THREE.Mesh(nucleusGeometry, nucleusMaterial);
+        nucleus.userData = { type: 'nucleus', originalPosition: [0, 0, 0] };
+        nucleusGroup.add(nucleus);
+        clickableObjects.push(nucleus);
+        
+        // Create nucleolus (dark spot inside nucleus)
+        const nucleolusGeometry = new THREE.SphereGeometry(0.25, 16, 16);
+        const nucleolusMaterial = new THREE.MeshPhysicalMaterial({
+            color: organelleData.nucleolus.color,
+            metalness: 0.3,
+            roughness: 0.4,
+            clippingPlanes: []
+        });
+        const nucleolus = new THREE.Mesh(nucleolusGeometry, nucleolusMaterial);
+        nucleolus.position.set(0.1, 0.1, 0);
+        nucleolus.userData = { type: 'nucleolus', originalPosition: [0.1, 0.1, 0] };
+        nucleusGroup.add(nucleolus);
+        clickableObjects.push(nucleolus);
+        
+        // Add nuclear pores (small dots on nucleus surface)
+        for (let i = 0; i < 20; i++) {
+            const poreGeometry = new THREE.SphereGeometry(0.03, 4, 4);
+            const poreMaterial = new THREE.MeshBasicMaterial({ color: 0x333333 });
+            const pore = new THREE.Mesh(poreGeometry, poreMaterial);
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+            pore.position.setFromSphericalCoords(1.0, phi, theta);
+            nucleusGroup.add(pore);
+        }
+        
+        nucleusGroup.position.set(0, 0, 0);
+        nucleusGroup.userData = { type: 'nucleus', originalPosition: [0, 0, 0] };
+        cellGroup.add(nucleusGroup);
+        organelles.nucleus = nucleusGroup;
+        
+        // Create mitochondria (realistic bean shapes with internal cristae)
+        const mitochondriaPositions = [
+            [1.5, 0.5, 0.8],
+            [-1.3, -0.3, 1.0],
+            [0.8, -0.6, -1.2],
+            [-0.9, 0.8, -0.5],
+            [1.2, -0.8, 0.3]
+        ];
+        
+        mitochondriaPositions.forEach(pos => {
+            const mitochondrionGroup = new THREE.Group();
+            
+            // Create elongated capsule shape for mitochondria
+            const bodyGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            bodyGeometry.scale(1, 2.5, 1);
+            
+            const bodyMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.mitochondria.color,
+                metalness: 0.2,
+                roughness: 0.5,
+                clearcoat: 0.2,
+                clippingPlanes: []
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.userData = { type: 'mitochondria' };
+            mitochondrionGroup.add(body);
+            clickableObjects.push(body);
+            
+            // Add internal cristae (visible folded membranes)
+            for (let i = 0; i < 5; i++) {
+                const cristaeGeometry = new THREE.BoxGeometry(0.25, 0.02, 0.25);
+                const cristaeMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xCC3333,
+                    metalness: 0.4,
+                    roughness: 0.3,
+                    opacity: 0.8,
+                    transparent: true,
+                    clippingPlanes: []
+                });
+                const cristae = new THREE.Mesh(cristaeGeometry, cristaeMaterial);
+                cristae.position.y = -0.3 + i * 0.15;
+                cristae.rotation.z = Math.random() * 0.3 - 0.15;
+                mitochondrionGroup.add(cristae);
+            }
+            
+            mitochondrionGroup.position.set(...pos);
+            mitochondrionGroup.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+            mitochondrionGroup.scale.set(0.8, 0.8, 0.8);
+            mitochondrionGroup.userData = { type: 'mitochondria', originalPosition: pos };
+            cellGroup.add(mitochondrionGroup);
+        });
+        
+        // Create Rough Endoplasmic Reticulum (folded sheets with ribosomes)
+        const roughERGroup = new THREE.Group();
+        
+        // Create layered sheets
+        for (let i = 0; i < 4; i++) {
+            const sheetGeometry = new THREE.PlaneGeometry(1.2, 0.8, 10, 10);
+            // Add wave distortion
+            const vertices = sheetGeometry.attributes.position;
+            for (let j = 0; j < vertices.count; j++) {
+                const x = vertices.getX(j);
+                const y = vertices.getY(j);
+                vertices.setZ(j, Math.sin(x * 3) * Math.cos(y * 3) * 0.1);
+            }
+            
+            const sheetMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.roughER.color,
+                metalness: 0.1,
+                roughness: 0.7,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.7,
+                clippingPlanes: []
+            });
+            const sheet = new THREE.Mesh(sheetGeometry, sheetMaterial);
+            sheet.position.y = i * 0.2 - 0.3;
+            sheet.rotation.x = Math.PI / 2 + (Math.random() - 0.5) * 0.2;
+            roughERGroup.add(sheet);
+            
+            // Add ribosomes to make it "rough"
+            for (let k = 0; k < 15; k++) {
+                const ribosomeGeometry = new THREE.SphereGeometry(0.04, 6, 6);
+                const ribosomeMaterial = new THREE.MeshPhysicalMaterial({
+                    color: organelleData.ribosomes.color,
+                    metalness: 0.4,
+                    roughness: 0.3,
+                    clippingPlanes: []
+                });
+                const ribosome = new THREE.Mesh(ribosomeGeometry, ribosomeMaterial);
+                ribosome.position.set(
+                    (Math.random() - 0.5) * 1.0,
+                    i * 0.2 - 0.3 + (Math.random() - 0.5) * 0.05,
+                    (Math.random() - 0.5) * 0.6
+                );
+                roughERGroup.add(ribosome);
+            }
+        }
+        
+        roughERGroup.position.set(1.8, 0.3, 0);
+        roughERGroup.userData = { type: 'roughER', originalPosition: [1.8, 0.3, 0] };
+        cellGroup.add(roughERGroup);
+        organelles.roughER = roughERGroup;
+        clickableObjects.push(roughERGroup);
+        
+        // Create Smooth Endoplasmic Reticulum (tubular network)
+        const smoothERGroup = new THREE.Group();
+        
+        // Create interconnected tubes
+        for (let i = 0; i < 3; i++) {
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-0.5, i * 0.2, 0),
+                new THREE.Vector3(0, i * 0.2 + 0.1, 0.3),
+                new THREE.Vector3(0.5, i * 0.2, 0),
+                new THREE.Vector3(0, i * 0.2 - 0.1, -0.3),
+                new THREE.Vector3(-0.5, i * 0.2, 0)
+            ]);
+            
+            const tubeGeometry = new THREE.TubeGeometry(curve, 20, 0.06, 8, false);
+            const tubeMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.smoothER.color,
+                metalness: 0.2,
+                roughness: 0.5,
+                clearcoat: 0.3,
+                clippingPlanes: []
+            });
+            const tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            smoothERGroup.add(tube);
+        }
+        
+        smoothERGroup.position.set(-1.8, -0.5, 0.5);
+        smoothERGroup.userData = { type: 'smoothER', originalPosition: [-1.8, -0.5, 0.5] };
+        cellGroup.add(smoothERGroup);
+        organelles.smoothER = smoothERGroup;
+        clickableObjects.push(smoothERGroup);
+        
+        // Create Golgi Apparatus (stacked, curved cisternae)
+        const golgiGroup = new THREE.Group();
+        
+        for (let i = 0; i < 6; i++) {
+            const scale = 1 - i * 0.1;
+            const cisternaGeometry = new THREE.TorusGeometry(0.5 * scale, 0.05, 4, 30, Math.PI);
+            const cisternaMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.golgiApparatus.color,
+                metalness: 0.3,
+                roughness: 0.4,
+                clearcoat: 0.2,
+                clippingPlanes: []
+            });
+            const cisterna = new THREE.Mesh(cisternaGeometry, cisternaMaterial);
+            cisterna.position.y = i * 0.08;
+            cisterna.rotation.x = Math.PI / 2;
+            golgiGroup.add(cisterna);
+            
+            // Add vesicles budding off
+            if (i === 0 || i === 5) {
+                for (let j = 0; j < 3; j++) {
+                    const vesicleGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+                    const vesicleMaterial = new THREE.MeshPhysicalMaterial({
+                        color: organelleData.golgiApparatus.color,
+                        metalness: 0.5,
+                        roughness: 0.2,
+                        transparent: true,
+                        opacity: 0.8,
+                        clippingPlanes: []
+                    });
+                    const vesicle = new THREE.Mesh(vesicleGeometry, vesicleMaterial);
+                    vesicle.position.set(
+                        Math.cos(j * 2) * 0.6 * scale,
+                        i * 0.08,
+                        Math.sin(j * 2) * 0.6 * scale
+                    );
+                    golgiGroup.add(vesicle);
+                }
+            }
+        }
+        
+        golgiGroup.position.set(-0.8, 0.5, -0.8);
+        golgiGroup.rotation.y = Math.PI / 4;
+        golgiGroup.userData = { type: 'golgiApparatus', originalPosition: [-0.8, 0.5, -0.8] };
+        cellGroup.add(golgiGroup);
+        organelles.golgiApparatus = golgiGroup;
+        clickableObjects.push(golgiGroup);
+        
+        // Create free-floating ribosomes
+        const ribosomePositions = [
+            [0.5, 0.8, 0.3], [-0.6, 0.7, -0.4], [0.3, -0.8, 0.5],
+            [-0.4, -0.7, -0.3], [1.1, 0.2, -0.6], [-1.0, -0.1, 0.9],
+            [0.7, -0.3, -0.8], [-0.5, 0.4, 0.7], [0.9, 0.6, -0.2]
+        ];
+        
+        ribosomePositions.forEach(pos => {
+            const ribosomeGeometry = new THREE.SphereGeometry(0.06, 8, 8);
+            const ribosomeMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.ribosomes.color,
+                metalness: 0.5,
+                roughness: 0.2,
+                clearcoat: 0.6,
+                clippingPlanes: []
+            });
+            const ribosome = new THREE.Mesh(ribosomeGeometry, ribosomeMaterial);
+            ribosome.position.set(...pos);
+            ribosome.userData = { type: 'ribosomes', originalPosition: pos };
+            cellGroup.add(ribosome);
+            clickableObjects.push(ribosome);
+        });
+        
+        // Create lysosomes (irregular spheres with internal particles)
+        const lysosomePositions = [
+            [-0.8, 0.3, 1.2],
+            [0.7, -0.4, 0.9],
+            [-1.2, -0.6, -0.3]
+        ];
+        
+        lysosomePositions.forEach(pos => {
+            const lysosomeGroup = new THREE.Group();
+            
+            const lysosomeGeometry = new THREE.SphereGeometry(0.2, 16, 16);
+            // Make it slightly irregular
+            const vertices = lysosomeGeometry.attributes.position;
+            for (let i = 0; i < vertices.count; i++) {
+                const x = vertices.getX(i);
+                const y = vertices.getY(i);
+                const z = vertices.getZ(i);
+                const noise = (Math.random() - 0.5) * 0.05;
+                vertices.setXYZ(i, x * (1 + noise), y * (1 + noise), z * (1 + noise));
+            }
+            
+            const lysosomeMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.lysosomes.color,
+                metalness: 0.2,
+                roughness: 0.5,
+                transparent: true,
+                opacity: 0.7,
+                clearcoat: 0.3,
+                clippingPlanes: []
+            });
+            const lysosome = new THREE.Mesh(lysosomeGeometry, lysosomeMaterial);
+            lysosome.userData = { type: 'lysosomes' };
+            lysosomeGroup.add(lysosome);
+            clickableObjects.push(lysosome);
+            
+            // Add enzyme particles inside
+            for (let i = 0; i < 5; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.02, 4, 4);
+                const particleMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xFFFFFF,
+                    opacity: 0.6,
+                    transparent: true
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                particle.position.set(
+                    (Math.random() - 0.5) * 0.15,
+                    (Math.random() - 0.5) * 0.15,
+                    (Math.random() - 0.5) * 0.15
+                );
+                lysosomeGroup.add(particle);
+            }
+            
+            lysosomeGroup.position.set(...pos);
+            lysosomeGroup.userData = { type: 'lysosomes', originalPosition: pos };
+            cellGroup.add(lysosomeGroup);
+        });
+        
+        // Create peroxisomes
+        const peroxisomePositions = [
+            [1.2, -0.5, -0.6],
+            [-1.1, 0.4, -0.7],
+            [0.4, 0.9, 0.8]
+        ];
+        
+        peroxisomePositions.forEach(pos => {
+            const peroxisomeGeometry = new THREE.OctahedronGeometry(0.15, 2);
+            const peroxisomeMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.peroxisomes.color,
+                metalness: 0.4,
+                roughness: 0.3,
+                clearcoat: 0.5,
+                clippingPlanes: []
+            });
+            const peroxisome = new THREE.Mesh(peroxisomeGeometry, peroxisomeMaterial);
+            peroxisome.position.set(...pos);
+            peroxisome.userData = { type: 'peroxisomes', originalPosition: pos };
+            cellGroup.add(peroxisome);
+            clickableObjects.push(peroxisome);
+        });
+        
+        // Create centrioles (two perpendicular cylinders)
+        const centriolesGroup = new THREE.Group();
+        
+        const centrioleGeometry = new THREE.CylinderGeometry(0.08, 0.08, 0.3, 9);
+        const centrioleMaterial = new THREE.MeshPhysicalMaterial({
+            color: organelleData.centrioles.color,
+            metalness: 0.6,
+            roughness: 0.2,
+            clippingPlanes: []
+        });
+        
+        const centriole1 = new THREE.Mesh(centrioleGeometry, centrioleMaterial);
+        centriolesGroup.add(centriole1);
+        
+        const centriole2 = new THREE.Mesh(centrioleGeometry, centrioleMaterial);
+        centriole2.rotation.z = Math.PI / 2;
+        centriolesGroup.add(centriole2);
+        
+        centriolesGroup.position.set(0.5, 1.2, 0.3);
+        centriolesGroup.userData = { type: 'centrioles', originalPosition: [0.5, 1.2, 0.3] };
+        cellGroup.add(centriolesGroup);
+        organelles.centrioles = centriolesGroup;
+        clickableObjects.push(centriolesGroup);
+        
+        // Create vacuoles (small storage vesicles)
+        const vacuolePositions = [
+            [-0.3, -1.1, 0.5],
+            [0.6, -0.9, -0.7],
+            [-1.3, 0.2, 0.3]
+        ];
+        
+        vacuolePositions.forEach(pos => {
+            const vacuoleGeometry = new THREE.SphereGeometry(0.12, 12, 12);
+            const vacuoleMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.vacuoles.color,
+                metalness: 0.1,
+                roughness: 0.2,
+                transparent: true,
+                opacity: 0.5,
+                clearcoat: 0.8,
+                clippingPlanes: []
+            });
+            const vacuole = new THREE.Mesh(vacuoleGeometry, vacuoleMaterial);
+            vacuole.position.set(...pos);
+            vacuole.userData = { type: 'vacuoles', originalPosition: pos };
+            cellGroup.add(vacuole);
+            clickableObjects.push(vacuole);
+        });
+        
+        // Create microvilli (small projections on membrane)
+        for (let i = 0; i < 8; i++) {
+            const microvillusGeometry = new THREE.ConeGeometry(0.05, 0.3, 6);
+            const microvillusMaterial = new THREE.MeshPhysicalMaterial({
+                color: organelleData.microvilli.color,
+                metalness: 0.2,
+                roughness: 0.6,
+                clippingPlanes: []
+            });
+            const microvillus = new THREE.Mesh(microvillusGeometry, microvillusMaterial);
+            
+            const theta = (i / 8) * Math.PI * 2;
+            const x = Math.cos(theta) * 3.5;
+            const z = Math.sin(theta) * 3.5;
+            microvillus.position.set(x, 0, z);
+            microvillus.lookAt(x * 2, 0, z * 2);
+            microvillus.userData = { type: 'microvilli', originalPosition: [x, 0, z] };
+            cellGroup.add(microvillus);
+            clickableObjects.push(microvillus);
+        }
+        
+        // Create cytoskeleton (network of lines)
+        const cytoskeletonGroup = new THREE.Group();
+        const cytoskeletonMaterial = new THREE.LineBasicMaterial({
+            color: organelleData.cytoskeleton.color,
+            opacity: 0.3,
+            transparent: true
+        });
+        
+        // Create microtubules
+        for (let i = 0; i < 10; i++) {
+            const points = [];
+            const startPoint = new THREE.Vector3(
+                (Math.random() - 0.5) * 6,
+                (Math.random() - 0.5) * 6,
+                (Math.random() - 0.5) * 6
+            );
+            points.push(startPoint);
+            
+            for (let j = 0; j < 3; j++) {
+                points.push(new THREE.Vector3(
+                    startPoint.x + (Math.random() - 0.5) * 2,
+                    startPoint.y + (Math.random() - 0.5) * 2,
+                    startPoint.z + (Math.random() - 0.5) * 2
+                ));
+            }
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, cytoskeletonMaterial);
+            cytoskeletonGroup.add(line);
+        }
+        
+        cytoskeletonGroup.userData = { type: 'cytoskeleton', originalPosition: [0, 0, 0] };
+        cellGroup.add(cytoskeletonGroup);
+        
+        // Camera positioning
+        camera.position.set(6, 4, 6);
+        camera.lookAt(0, 0, 0);
+        
+        // Mouse controls
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let autoRotate = false;
+        let exploded = false;
+        
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        renderer.domElement.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+            
+            cellGroup.rotation.y += deltaX * 0.005;
+            cellGroup.rotation.x += deltaY * 0.005;
+            
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        renderer.domElement.addEventListener(
+            'wheel',
+            (e) => {
+                e.preventDefault();
+                const zoomIntensity = 0.15;
+                const direction = e.deltaY > 0 ? 1 : -1;
+                const currentDistance = camera.position.length();
+                const targetDistance = THREE.MathUtils.clamp(
+                    currentDistance * (1 + direction * zoomIntensity),
+                    2,
+                    15
+                );
+                camera.position.setLength(targetDistance);
+            },
+            { passive: false }
+        );
+        
+        // Raycaster for clicking organelles - FIXED version
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        // Store all clickable objects with their types
+        const clickableMap = new Map();
+        
+        // Register all organelles for clicking
+        cellGroup.traverse((child) => {
+            if (child.userData && child.userData.type) {
+                clickableMap.set(child, child.userData.type);
+            }
+        });
+        
+        renderer.domElement.addEventListener('click', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            // Test against all objects
+            const allObjects = [];
+            cellGroup.traverse(obj => {
+                if (obj.isMesh) {
+                    allObjects.push(obj);
+                }
+            });
+            
+            const intersects = raycaster.intersectObjects(allObjects, false); // Don't recurse, we already have all meshes
+            
+            if (intersects.length > 0) {
+                // Go through intersections from closest to farthest
+                for (let i = 0; i < intersects.length; i++) {
+                    const intersectedObject = intersects[i].object;
+                    
+                    // Check if this object or any of its parents has a type
+                    let currentObj = intersectedObject;
+                    let foundOrganelle = null;
+                    
+                    while (currentObj && currentObj !== scene) {
+                        if (currentObj.userData && currentObj.userData.type) {
+                            // Skip membrane and cytoplasm unless they're the only thing clicked
+                            if ((currentObj.userData.type === 'cellMembrane' || 
+                                 currentObj.userData.type === 'cytoplasm') && 
+                                i < intersects.length - 1) {
+                                // Check if there's another organelle behind
+                                let hasOrganelleBehind = false;
+                                for (let j = i + 1; j < intersects.length; j++) {
+                                    let checkObj = intersects[j].object;
+                                    while (checkObj && checkObj !== scene) {
+                                        if (checkObj.userData && checkObj.userData.type &&
+                                            checkObj.userData.type !== 'cellMembrane' &&
+                                            checkObj.userData.type !== 'cytoplasm' &&
+                                            checkObj.userData.type !== 'cytoskeleton') {
+                                            hasOrganelleBehind = true;
+                                            break;
+                                        }
+                                        checkObj = checkObj.parent;
+                                    }
+                                    if (hasOrganelleBehind) break;
+                                }
+                                
+                                if (hasOrganelleBehind) {
+                                    currentObj = currentObj.parent;
+                                    continue;
+                                }
+                            }
+                            
+                            if (organelleData[currentObj.userData.type]) {
+                                foundOrganelle = currentObj;
+                                break;
+                            }
+                        }
+                        currentObj = currentObj.parent;
+                    }
+                    
+                    if (foundOrganelle) {
+                        showOrganelleInfo(foundOrganelle.userData.type);
+                        highlightOrganelle(foundOrganelle);
+                        return; // Stop after finding first valid organelle
+                    }
+                }
+            }
+        });
+        
+        // UI Functions
+        function showOrganelleInfo(type) {
+            const data = organelleData[type];
+            const infoPanel = document.getElementById('infoPanel');
+            const infoContent = document.getElementById('infoContent');
+            
+            infoContent.innerHTML = `
+                <div class="organelle-name">${data.name}</div>
+                <div class="organelle-description">${data.description}</div>
+                <div class="organelle-description"><strong>Curriculum Note:</strong> ${data.curriculum}</div>
+                <div class="fun-fact">
+                    <div class="fun-fact-title">Cool Fact!</div>
+                    <div>${data.funFact}</div>
+                </div>
+            `;
+            
+            infoPanel.classList.add('active');
+        }
+        
+        function highlightOrganelle(object) {
+            // Reset previous selection
+            cellGroup.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    if (child.material.emissive) {
+                        child.material.emissive = new THREE.Color(0x000000);
+                        child.material.emissiveIntensity = 0;
+                    }
+                }
+            });
+            
+            // Highlight new selection and all its children
+            if (object) {
+                const highlightGroup = (obj) => {
+                    if (obj.isMesh && obj.material && obj.material.emissive !== undefined) {
+                        obj.material.emissive = new THREE.Color(0x00ffff);
+                        obj.material.emissiveIntensity = 0.4;
+                    }
+                    if (obj.children) {
+                        obj.children.forEach(child => highlightGroup(child));
+                    }
+                };
+                highlightGroup(object);
+                
+                selectedOrganelle = object;
+            }
+        }
+        
+        // Function to zoom to organelle
+        function zoomToOrganelle(organelleType) {
+            // Find the organelle in 3D scene
+            let targetObject = null;
+            
+            cellGroup.traverse((child) => {
+                if (child.userData && child.userData.type === organelleType) {
+                    targetObject = child;
+                }
+            });
+            
+            if (targetObject) {
+                // Calculate zoom position
+                const box = new THREE.Box3().setFromObject(targetObject);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                // Animate camera to focus on organelle
+                const targetDistance = maxDim * 4;
+                const direction = camera.position.clone().normalize();
+                const targetPosition = center.clone().add(direction.multiplyScalar(targetDistance));
+                
+                // Smooth camera movement
+                const startPosition = camera.position.clone();
+                const animationDuration = 1000;
+                const startTime = Date.now();
+                
+                function animateCamera() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / animationDuration, 1);
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    camera.position.lerpVectors(startPosition, targetPosition, easeProgress);
+                    camera.lookAt(center);
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateCamera);
+                    }
+                }
+                
+                animateCamera();
+                highlightOrganelle(targetObject);
+            }
+        }
+        
+        // Create legend with enhanced functionality
+        const legendContainer = document.getElementById('legendContainer');
+        Object.keys(organelleData).forEach(key => {
+            const data = organelleData[key];
+            const legendItem = document.createElement('div');
+            legendItem.className = 'legend-item';
+            legendItem.innerHTML = `
+                <div class="legend-color" style="background-color: #${data.color.toString(16).padStart(6, '0')}"></div>
+                <span>${data.name}</span>
+            `;
+            legendItem.addEventListener('click', () => {
+                showOrganelleInfo(key);
+                zoomToOrganelle(key);
+            });
+            legendContainer.appendChild(legendItem);
+        });
+        
+        // Button controls
+        document.getElementById('explodeBtn').addEventListener('click', function() {
+            exploded = !exploded;
+            this.classList.toggle('active');
+            
+            cellGroup.children.forEach(child => {
+                if (child.userData.originalPosition && child.userData.type !== 'cellMembrane' && child.userData.type !== 'cytoplasm') {
+                    const targetPosition = exploded 
+                        ? child.userData.originalPosition.map(coord => coord * 1.8)
+                        : child.userData.originalPosition;
+                    
+                    // Animate the explosion
+                    const startPosition = [child.position.x, child.position.y, child.position.z];
+                    const animationDuration = 1000;
+                    const startTime = Date.now();
+                    
+                    function animateExplosion() {
+                        const elapsed = Date.now() - startTime;
+                        const progress = Math.min(elapsed / animationDuration, 1);
+                        const easeProgress = 1 - Math.pow(1 - progress, 3);
+                        
+                        child.position.x = startPosition[0] + (targetPosition[0] - startPosition[0]) * easeProgress;
+                        child.position.y = startPosition[1] + (targetPosition[1] - startPosition[1]) * easeProgress;
+                        child.position.z = startPosition[2] + (targetPosition[2] - startPosition[2]) * easeProgress;
+                        
+                        if (progress < 1) {
+                            requestAnimationFrame(animateExplosion);
+                        }
+                    }
+                    
+                    animateExplosion();
+                }
+            });
+        });
+        
+        // Cut View Button - 2D Cross-section
+        document.getElementById('cutBtn').addEventListener('click', function() {
+            const canvas = document.getElementById('cut-canvas');
+            cutViewActive = !cutViewActive;
+            this.classList.toggle('active');
+            
+            if (cutViewActive) {
+                // Hide 3D view and show 2D cut view
+                renderer.domElement.style.display = 'none';
+                canvas.style.display = 'block';
+                drawCutView(canvas);
+            } else {
+                // Show 3D view and hide cut view
+                renderer.domElement.style.display = 'block';
+                canvas.style.display = 'none';
+            }
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Auto-rotate
+            if (autoRotate) {
+                cellGroup.rotation.y += 0.003;
+            }
+
+            // Floating animation for organelles
+            cellGroup.children.forEach((child, index) => {
+                if (child.userData.type &&
+                    child.userData.type !== 'cellMembrane' &&
+                    child.userData.type !== 'cytoplasm' &&
+                    child.userData.type !== 'cytoskeleton') {
+                    const time = Date.now() * 0.001;
+                    const offset = index * 0.5;
+                    child.position.y += Math.sin(time + offset) * 0.0008;
+
+                    // Slight rotation for some organelles
+                    if (child.userData.type === 'mitochondria' || child.userData.type === 'lysosomes') {
+                        child.rotation.y += 0.002;
+                    }
+                }
+            });
+
+            // Pulse selected organelle
+            if (selectedOrganelle) {
+                const time = Date.now() * 0.001;
+                const pulseIntensity = 0.4 + Math.sin(time * 4) * 0.1;
+
+                // Apply pulse to all meshes in the selected group
+                const applyPulse = (obj) => {
+                    if (obj.isMesh && obj.material && obj.material.emissive !== undefined) {
+                        obj.material.emissiveIntensity = pulseIntensity;
+                    }
+                    if (obj.children) {
+                        obj.children.forEach(child => applyPulse(child));
+                    }
+                };
+                applyPulse(selectedOrganelle);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 2D Cut View Drawing with Animal Cell Image
+        function drawCutView(canvas) {
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            resizeCanvas();
+
+            const cellImage = new Image();
+            cellImage.src = './animal-cell-diagram.avif';
+            let imageLoaded = false;
+            let imageError = false;
+            const enhancementCanvas = document.createElement('canvas');
+            const enhancementCtx = enhancementCanvas.getContext('2d', { willReadFrequently: true });
+
+            function draw() {
+                const backgroundGradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                backgroundGradient.addColorStop(0, '#241047');
+                backgroundGradient.addColorStop(0.3, '#372a81');
+                backgroundGradient.addColorStop(0.65, '#1b4e81');
+                backgroundGradient.addColorStop(1, '#214463');
+                ctx.fillStyle = backgroundGradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const paddingRatio = 0.02;
+                const availableWidth = canvas.width * (1 - paddingRatio * 2);
+                const availableHeight = canvas.height * (1 - paddingRatio * 2);
+                const imgRatio = cellImage.width && cellImage.height ? cellImage.width / cellImage.height : 1;
+                let imageWidth = availableWidth;
+                let imageHeight = imageWidth / imgRatio;
+
+                if (imageHeight > availableHeight) {
+                    imageHeight = availableHeight;
+                    imageWidth = imageHeight * imgRatio;
+                }
+
+                const imageX = (canvas.width - imageWidth) / 2;
+                const imageY = (canvas.height - imageHeight) / 2 + 20;
+
+                if (imageLoaded && cellImage.complete) {
+                    const renderWidth = Math.max(1, Math.floor(imageWidth));
+                    const renderHeight = Math.max(1, Math.floor(imageHeight));
+
+                    enhancementCanvas.width = renderWidth;
+                    enhancementCanvas.height = renderHeight;
+                    enhancementCtx.imageSmoothingEnabled = true;
+                    enhancementCtx.imageSmoothingQuality = 'high';
+                    enhancementCtx.drawImage(cellImage, 0, 0, renderWidth, renderHeight);
+
+                    const imageData = enhancementCtx.getImageData(0, 0, renderWidth, renderHeight);
+                    const data = imageData.data;
+                    const original = new Uint8ClampedArray(data);
+                    const kernel = [0, -1, 0, -1, 5.2, -1, 0, -1, 0];
+                    const contrast = 1.15;
+                    const width = renderWidth;
+                    const height = renderHeight;
+                    const half = 1;
+
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const idx = (y * width + x) * 4;
+                            for (let c = 0; c < 3; c++) {
+                                let sum = 0;
+                                let kIndex = 0;
+                                for (let ky = -half; ky <= half; ky++) {
+                                    const sampleY = Math.min(height - 1, Math.max(0, y + ky));
+                                    for (let kx = -half; kx <= half; kx++) {
+                                        const sampleX = Math.min(width - 1, Math.max(0, x + kx));
+                                        const sampleIdx = (sampleY * width + sampleX) * 4 + c;
+                                        sum += original[sampleIdx] * kernel[kIndex++];
+                                    }
+                                }
+                                sum = (sum - 128) * contrast + 128;
+                                data[idx + c] = Math.max(0, Math.min(255, sum));
+                            }
+                            data[idx + 3] = original[idx + 3];
+                        }
+                    }
+
+                    enhancementCtx.putImageData(imageData, 0, 0);
+                    ctx.drawImage(enhancementCanvas, imageX, imageY, imageWidth, imageHeight);
+                } else {
+                    ctx.strokeStyle = '#cccccc';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(imageX, imageY, imageWidth, imageHeight);
+
+                    ctx.fillStyle = imageError ? '#ff4444' : '#666666';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(
+                        imageError
+                            ? 'Image failed to load: animal-cell-diagram.avif'
+                            : 'Loading labeled cross-section...',
+                        canvas.width / 2,
+                        canvas.height / 2
+                    );
+                }
+
+                ctx.save();
+                const noteGradient = ctx.createLinearGradient(0, canvas.height * 0.03, 0, canvas.height * 0.13);
+                noteGradient.addColorStop(0, 'rgba(50, 30, 100, 0.75)');
+                noteGradient.addColorStop(1, 'rgba(30, 45, 110, 0.55)');
+                ctx.fillStyle = noteGradient;
+                const noteMarginX = canvas.width * 0.04;
+                const noteWidth = canvas.width - noteMarginX * 2;
+                const noteHeight = 70;
+                ctx.fillRect(noteMarginX, canvas.height * 0.04, noteWidth, noteHeight);
+                ctx.font = '600 18px Arial';
+                ctx.fillStyle = '#f0f6ff';
+                ctx.textAlign = 'center';
+                ctx.fillText('Academic note: This is a generalized animal cell model. Actual structures vary by tissue type and function.', canvas.width / 2, canvas.height * 0.04 + 40);
+                ctx.restore();
+
+                ctx.save();
+                ctx.globalAlpha = 0.4;
+                ctx.fillStyle = '#00ffff';
+                ctx.fillRect(canvas.width - 60, 20, 40, 40);
+                ctx.restore();
+
+                ctx.strokeStyle = '#00ffff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(canvas.width - 60, 20, 40, 40);
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width - 50, 30);
+                ctx.lineTo(canvas.width - 30, 50);
+                ctx.moveTo(canvas.width - 30, 30);
+                ctx.lineTo(canvas.width - 50, 50);
+                ctx.stroke();
+            }
+
+            const handleResize = () => {
+                resizeCanvas();
+                draw();
+            };
+
+            window.addEventListener('resize', handleResize);
+
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                if (clickX >= canvas.width - 60 && clickX <= canvas.width - 20 &&
+                    clickY >= 20 && clickY <= 60) {
+                    document.getElementById('cutBtn').click();
+                }
+            });
+
+            cellImage.onload = () => {
+                imageLoaded = true;
+                draw();
+            };
+
+            cellImage.onerror = () => {
+                imageError = true;
+                draw();
+            };
+
+            draw();
+        }
+
+        console.log('3D Cell Explorer loaded successfully!');
+    }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
